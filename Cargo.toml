@@ -8,6 +8,9 @@ edition = "2018"
 
 [dependencies]
 tsuga = {"path" = "../tsuga"}
+euphoria = {"path" = "../euphoria"}
+gymnasium = {"path" = "../gymnasium"}
+
 ndarray = "0.13"
 
 ndarray-stats = "0.3"

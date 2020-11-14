@@ -305,6 +305,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "euphoria"
+version = "0.1.0"
+dependencies = [
+ "ndarray",
+ "rand 0.7.3",
+ "tsuga",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -429,6 +438,14 @@ checksum = "02efba560f227847cb41463a7395c514d127d4f74fff12ef0137fff1b84b96c4"
 dependencies = [
  "color_quant",
  "weezl",
+]
+
+[[package]]
+name = "gymnasium"
+version = "0.1.0"
+dependencies = [
+ "ndarray",
+ "rand 0.7.3",
 ]
 
 [[package]]
@@ -1818,6 +1835,8 @@ version = "0.1.0"
 dependencies = [
  "cifar-ten",
  "crossterm",
+ "euphoria",
+ "gymnasium",
  "image",
  "imageproc",
  "indicatif",
