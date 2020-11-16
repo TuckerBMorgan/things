@@ -10,12 +10,12 @@ Todo:
         Conv layer
         Rewrite the activation function to not be in place, and string based
     For gymnasium:
-        Make Snake
+        * Make Snake
         * Make cartpole
         * build Box2d
         Integrate storm/minifb to allow it to render an image
     For euphoria
-        Add target networks
+        * Add target networks
         Add actor critic
         Add policy gradient
 Add nothing to this list untill all above is done        
