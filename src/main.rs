@@ -6,72 +6,11 @@ use gymnasium::prelude::*;
 use ndarray_stats::QuantileExt;
 use rand::prelude::*;
 
-/*
-fn optimize_model(replay_buffer: &ReplayBuffer, model: &mut FullyConnectedNetwork, number_of_samples: usize) {
-    let reward_discount_factor = 0.95f32;
-    let memories = replay_buffer.sample_batch(number_of_samples);
-    for memory in memories {
-        let mut rewards_of_actions = model.predict(memory.0.clone());
-        let mut rewards_of_possible_next_state = model.predict(memory.3.clone());
-        if *memory.4 == true {
-            rewards_of_actions[[0, *memory.1]] = *memory.2;
-        } else {
-            rewards_of_actions[[0, *memory.1]] = *memory.2 + (reward_discount_factor * rewards_of_possible_next_state.max().unwrap());
-        }
-        model.single_training_batch(memory.0.clone(), rewards_of_actions, 1);
-    }
-}
-*/
-
 fn one_hot_embedding(state: usize, number_of_states: usize) -> Array2<f32> {
     let mut embdeded_state = Array2::zeros((1, number_of_states));
     embdeded_state[[0, state]] = 1.0f32;
     return embdeded_state;
 }
-/*
-fn run_but_with_networks(model: &mut FullyConnectedNetwork, remember: bool, no_search: bool, replay_buffer: &mut ReplayBuffer) -> f32 {
-    let mut fl = FrozenLake::new();
-    let mut state = fl.reset();
-    let mut done = false;
-    let mut total_run = 0.0;
-    while !done {
-        let mut rng = rand::thread_rng();
-        let num: usize = rng.gen_range(0, 100);
-        let next_action;
-        //Most of the time, follow a greedy policy 
-        if no_search == true || num < 90 {
-            let embbded_state = one_hot_embedding(state, 16);
-            let action_values = model.predict(embbded_state);
-            let mut larget_index = 0;
-            let mut larget_value = action_values[[0, 0]];
-            for i in 0..4 {
-                if action_values[[0, i]] > larget_value {
-                    larget_index = i;
-                    larget_value = action_values[[0, i]];
-                }
-            }
-            next_action = larget_index;
-        }
-        //but 5% of time follow a random policy
-        else {
-            next_action = rng.gen_range(0, 4);
-        }
-        let result = fl.step(next_action);
-        match result {
-            Ok((next_state, reward, is_done)) => {                
-                if remember {
-                    replay_buffer.add_memory(one_hot_embedding(state, 16), next_action, reward, one_hot_embedding(next_state, 16), done);
-                }
-                state = next_state;
-                done = is_done;
-                total_run += reward;
-            },
-            Err(_) => {}
-        }
-    }
-    return total_run;
-}
-*/
 
 #[inline]
 fn highest_index(array: &Array2<f32>) -> usize {
@@ -87,7 +26,7 @@ fn highest_index(array: &Array2<f32>) -> usize {
 }
 
 fn single_run_for_cartpole(networks: &mut TargetNetworkDQN, remember: bool, follow_random: bool, number_of_allowed_actions: usize, e_barrior: usize) -> f32 { 
-    let mut cartpole = Cartpole::new();
+    let mut cartpole = make(&String::from("Cartpole")).unwrap();
     let mut done = false;
     let mut total_reward = 0.0f32;
     let mut state = cartpole.reset();
@@ -103,12 +42,6 @@ fn single_run_for_cartpole(networks: &mut TargetNetworkDQN, remember: bool, foll
         else {
             let action_values = networks.predict(state.clone());
             action_to_take = highest_index(&action_values);
-            /*
-            if follow_random == follow_random {
-                println!("{}", action_values);
-                println!("{}", action_to_take);
-            }
-            */
         }
         let (next_state, mut reward, is_done) = cartpole.step(action_to_take);
         total_reward += reward;
@@ -150,32 +83,6 @@ fn cartpole_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
 
 
 }
-/*
-fn frozen_lake(model: &mut FullyConnectedNetwork, replay_buffer: &mut ReplayBuffer) {
-    for i in 0..10000 {
-        let _ = run_but_with_networks(model, true, false, replay_buffer);
-        if i % 100 == 0 {
-            let mut total_run_reward = 0.0f32;
-            for _ in 0..100 {
-                let run_reward = run_but_with_networks(model, false, true, replay_buffer);
-                total_run_reward += run_reward;            
-            }
-            println!("Average run reward was {}", total_run_reward / 100.0f32);
-        }
-        if  replay_buffer.current_number_of_memories > 64 {
-            optimize_model(&replay_buffer, model, 64);
-        }
-    }
-
-    let mut array = Array2::zeros((16, 16));
-    for i in 0..16 {
-        array[[i, i]] = 1.0f32;
-    }
-
-    let value = model.predict(array);
-    println!("{:?}", value);
-}
-*/
 
 fn main() {
     //frozen_lake();

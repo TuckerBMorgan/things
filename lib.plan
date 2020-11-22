@@ -4,11 +4,11 @@ Todo:
     For Tsuga
         Come up with a better name(flow)
         Add gradient optimiation options:
-            Adagrad
+            *Adagrad
             Adam
             RSMProp
         Conv layer
-        Rewrite the activation function to not be in place, and string based
+        Rewrite the activation function to not be in place, and not string based
     For gymnasium:
         * Make Snake
         * Make cartpole
