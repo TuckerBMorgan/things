@@ -1,5 +1,6 @@
 legend: * is done
-
+        $ means change
+        # follows $ tasks to show what they have be replaced by 
 Todo:
     For Tsuga
         Come up with a better name(flow)
@@ -9,6 +10,7 @@ Todo:
             RSMProp
         Conv layer
         Rewrite the activation function to not be in place, and not string based
+        Allow the network to be created from a "config" and not a builder pattern
     For gymnasium:
         * Make Snake
         * Make cartpole
@@ -16,6 +18,11 @@ Todo:
         Integrate storm/minifb to allow it to render an image
     For euphoria
         * Add target networks
-        Add actor critic
-        Add policy gradient
+        * These where both "improper tasks"         
+        $ Add actor critic
+        $ Add policy gradient
+        # Better tasks
+        Change current "target network DQN" to Categorical network
+        Create a Stocastic network
+        Allow me to add Target networks to whatever I want
 Add nothing to this list untill all above is done        
