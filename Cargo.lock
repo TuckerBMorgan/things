@@ -444,6 +444,7 @@ dependencies = [
 name = "gymnasium"
 version = "0.1.0"
 dependencies = [
+ "minifb 0.19.1",
  "ndarray",
  "rand 0.7.3",
 ]
@@ -779,6 +780,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f55ed282e7f342aff95d5d43156b83c0456a80cbd731b8761cf0a3607f8c3158"
 dependencies = [
  "cast",
+ "cc",
+ "orbclient",
+ "raw-window-handle",
+ "tempfile",
+ "wayland-client",
+ "wayland-cursor",
+ "wayland-protocols",
+ "winapi 0.3.9",
+ "x11-dl",
+ "xkb",
+ "xkbcommon-sys",
+]
+
+[[package]]
+name = "minifb"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eb411a297b8f714800f085846cbda55fbd2ae17ecd381f1b4652af0e5bebe63"
+dependencies = [
  "cc",
  "orbclient",
  "raw-window-handle",
@@ -1854,7 +1874,7 @@ dependencies = [
  "image",
  "imageproc",
  "indicatif",
- "minifb",
+ "minifb 0.18.0",
  "mnist",
  "ndarray",
  "ndarray-rand",

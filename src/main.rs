@@ -18,57 +18,44 @@ fn highest_index(array: &Array2<f32>) -> usize {
     return index;
 }
 
-struct Trajectory {
-    memories: Vec<GenericMemory>
-}
-
-impl Trajectory {
-    pub fn new() -> Trajectory {
-        Trajectory {
-            memories: vec![]
-        }
-    }
-
-    pub fn add_memory(&mut self, generic_memory: GenericMemory, log_probaility_of_action: f32) {
-        self.memories.push(generic_memory);
-    }
-
-    pub fn add_final_memory_and_assign_blame(&mut self, generic_memory: GenericMemory) {
-        
-    }
-}
 type RewardShapingFunction = fn(f32, bool, &Array2<f32>) -> f32;
 
-pub struct RunConvig {
+pub struct RunConvig<'a> {
     pub name: String,
+    pub enviroment: &'a mut Box<dyn Enviroment>,
     pub remember: bool, 
     pub follow_random_policy: bool, 
     pub number_of_allowed_actions: usize, 
     pub e_barrior: usize, 
-    pub reward_shaping_function: RewardShapingFunction
+    pub reward_shaping_function: RewardShapingFunction,
+    pub should_render: bool
 }
 
-impl<'a> RunConvig {
+impl<'a> RunConvig<'a> {
     pub fn new( name: String,
-                remember: bool, 
+                enviroment: &'a mut Box<dyn Enviroment>,
+                remember: bool,
                 follow_random_policy: bool,
                 number_of_allowed_actions: usize,
                 e_barrior: usize,
-                reward_shaping_function: RewardShapingFunction
-        ) -> RunConvig {
+                reward_shaping_function: RewardShapingFunction,
+                should_render: bool
+        ) -> RunConvig<'a> {
             RunConvig {
                 name,
+                enviroment,
                 remember,
                 follow_random_policy,
                 number_of_allowed_actions,
                 e_barrior,
-                reward_shaping_function
+                reward_shaping_function,
+                should_render
             }
     }
 }
 
-fn single_run_for_enviroment(runconfig: &RunConvig, networks: &mut DiscreteSpaceNetwork) -> f32 {
-    let mut enviroment = make(&runconfig.name).unwrap();
+fn single_run_for_enviroment(runconfig: &mut RunConvig, networks: &mut DiscreteSpaceNetwork) -> f32 {
+    let enviroment = &mut runconfig.enviroment;
     let mut done = false;
     let mut total_reward = 0.0f32;
     let mut state = enviroment.reset();
@@ -86,6 +73,9 @@ fn single_run_for_enviroment(runconfig: &RunConvig, networks: &mut DiscreteSpace
             action_to_take = highest_index(&action_values);
         }
         let (next_state, mut reward, is_done) = enviroment.step(action_to_take);
+        if runconfig.should_render {
+            enviroment.render();
+        }
         reward = (runconfig.reward_shaping_function)(reward, is_done, &next_state);
         if runconfig.remember {
             let memory = GenericMemory::new(state.clone(), action_to_take, reward, next_state.clone(), is_done);
@@ -110,8 +100,8 @@ fn acrobot_reward_shaping(_reward: f32, terminal: bool, _state: &Array2<f32>) ->
 fn acrobot_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
     let mut tndqn = DiscreteSpaceNetwork::new(model, model_t);
     let mut number_of_valdiation_runs = 0;
-
-    let mut runconvig = RunConvig::new(String::from("Acrobot"), true, true, 200, 100, acrobot_reward_shaping);
+    let mut enviroment = make(&String::from("Acrobot")).unwrap();
+    let mut runconvig = RunConvig::new(String::from("Acrobot"), &mut enviroment, true, true, 200, 100, acrobot_reward_shaping, false);
     for i in 0..100000 {
         let e = ((10000 as f32 - i as f32) / 10000 as f32) * 100.0f32;
 
@@ -121,7 +111,7 @@ fn acrobot_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
         runconvig.e_barrior = e as usize + 1;
         runconvig.number_of_allowed_actions = 200;
 
-        single_run_for_enviroment(&runconvig, &mut tndqn);
+        single_run_for_enviroment(&mut runconvig, &mut tndqn);
 
         if i % 10 == 0 && tndqn.number_of_collected_memories() > 32 {
             tndqn.optimize_models(32);
@@ -134,7 +124,7 @@ fn acrobot_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
                 runconvig.remember = false;
                 runconvig.follow_random_policy = false;
                 runconvig.e_barrior = 100;
-                rewards_summed += single_run_for_enviroment(&runconvig, &mut tndqn);
+                rewards_summed += single_run_for_enviroment(&mut runconvig, &mut tndqn);
             }
 
             println!("For run {}, avg reward was {}", number_of_valdiation_runs, rewards_summed / 100.0);
@@ -143,7 +133,10 @@ fn acrobot_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
     }
 }
 
-fn cartpole_reward_shaping(reward: f32, _terminal: bool, _state: &Array2<f32>) -> f32 {
+fn cartpole_reward_shaping(reward: f32, terminal: bool, _state: &Array2<f32>) -> f32 {
+    if terminal {
+        return -10.0f32;
+    }
    return reward;
 }
 
@@ -151,7 +144,8 @@ fn cartpole_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
     let mut tndqn = DiscreteSpaceNetwork::new(model, model_t);
     let mut number_of_valdiation_runs = 0;
 
-    let mut runconvig = RunConvig::new(String::from("Cartpole"), true, true, 200, 100, cartpole_reward_shaping);
+    let mut enviroment = make(&String::from("Cartpole")).unwrap();
+    let mut runconvig = RunConvig::new(String::from("Cartpole"), &mut enviroment, true, true, 200, 100, cartpole_reward_shaping, true);
 
     for i in 0..100000 {
         let e = ((10000 as f32 - i as f32) / 10000 as f32) * 100.0f32;
@@ -159,20 +153,22 @@ fn cartpole_env(model: FullyConnectedNetwork, model_t:FullyConnectedNetwork) {
         runconvig.remember = true;
         runconvig.follow_random_policy = true;
         runconvig.e_barrior = e as usize + 1;
+        runconvig.should_render = true;
 
-        single_run_for_enviroment(&runconvig, &mut tndqn);
+        single_run_for_enviroment(&mut runconvig, &mut tndqn);
 
         if i % 10 == 0 && tndqn.number_of_collected_memories() > 32 {
             tndqn.optimize_models(32);
         }
-        if i != 0 && i % 100 == 0 {
+        if i != 0 && i % 1000 == 0 {
             number_of_valdiation_runs += 1;            
             let mut rewards_summed = 0.0f32;
-            for _ in 0..100 {
-                runconvig.remember = false;
-                runconvig.follow_random_policy = false;
-                runconvig.e_barrior = 100;
-                rewards_summed += single_run_for_enviroment(&runconvig, &mut tndqn);
+            runconvig.remember = false;
+            runconvig.follow_random_policy = false;
+            runconvig.e_barrior = 100;
+            runconvig.should_render = true;
+            for _ in 0..100 {                
+                rewards_summed += single_run_for_enviroment(&mut runconvig, &mut tndqn);
             }
 
             println!("For run {}, avg reward was {}", number_of_valdiation_runs, rewards_summed / 100.0);
@@ -214,7 +210,7 @@ fn acrobot() {
 
     let input = Array2::<f32>::zeros((128, 6));
     let output = Array2::<f32>::zeros((128, 2));
-    let target_fcn = FullyConnectedNetwork::default(input, output)
+    let mut target_fcn = FullyConnectedNetwork::default(input, output)
         .add_layers(layers_cfg)
         .iterations(10_000)
         .min_iterations(700)
@@ -223,6 +219,7 @@ fn acrobot() {
         .batch_size(128)
         .validation_pct(0.0001)
         .build();
+    fcn.blind_copy(&mut target_fcn);
     acrobot_env(fcn, target_fcn);
 }
 
@@ -250,7 +247,7 @@ fn cartpole() {
         .error_threshold(0.05)
         .learnrate(0.01)
         .batch_size(128)
-        .validation_pct(0.0001)
+        .validation_pct(0.001)
         .build();
 
     let mut layers_cfg: Vec<FCLayer> = Vec::new();
@@ -264,20 +261,26 @@ fn cartpole() {
 
     let input = Array2::<f32>::zeros((128, 4));
     let output = Array2::<f32>::zeros((128, 2));
-    let target_fcn = FullyConnectedNetwork::default(input, output)
+    let mut target_fcn = FullyConnectedNetwork::default(input, output)
         .add_layers(layers_cfg)
         .iterations(10_000)
         .min_iterations(700)
         .error_threshold(0.05)
         .learnrate(0.01)
         .batch_size(128)
-        .validation_pct(0.0001)
+        .validation_pct(0.001)
         .build();
-
+    fcn.blind_copy(&mut target_fcn);
     cartpole_env(fcn, target_fcn);
 }
 
 fn main() {
-    acrobot();
+    let mut acrobot_thjing = make(&String::from("Acrobot")).unwrap();
+    acrobot_thjing.reset();
+    loop {
+        acrobot_thjing.render();
+    }
     cartpole();
+    acrobot();
+
 }
